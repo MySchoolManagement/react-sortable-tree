@@ -15,5 +15,3 @@ coverage
 
 # Build directories (Will be preserved by npm)
 build
-style.css
-style.css.map
