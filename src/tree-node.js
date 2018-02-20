@@ -1,6 +1,7 @@
 import React, { Component, Children, cloneElement } from 'react';
 import PropTypes from 'prop-types';
-import styles from './tree-node.scss';
+import classnames from './utils/classnames';
+import './tree-node.css';
 
 class TreeNode extends Component {
   render() {
@@ -17,16 +18,10 @@ class TreeNode extends Component {
       draggedNode,
       canDrop,
       treeIndex,
-      /* eslint-disable no-unused-vars */
-      customCanDrop: _customCanDrop, // Delete from otherProps
-      dragHover: _dragHover, // Delete from otherProps
-      getNodeKey: _getNodeKey, // Delete from otherProps
-      getPrevRow: _getPrevRow, // Delete from otherProps
-      maxDepth: _maxDepth, // Delete from otherProps
-      node: _node, // Delete from otherProps
-      path: _path, // Delete from otherProps
-      treeData: _treeData, // Delete from otherProps
-      /* eslint-enable no-unused-vars */
+      treeId, // Delete from otherProps
+      getPrevRow, // Delete from otherProps
+      node, // Delete from otherProps
+      path, // Delete from otherProps
       ...otherProps
     } = this.props;
 
@@ -45,7 +40,8 @@ class TreeNode extends Component {
           // |  +--+
           // |  |  |
           // +--+--+
-          lineClass = `${styles.lineHalfHorizontalRight} ${styles.lineHalfVerticalBottom}`;
+          lineClass =
+            'rst__lineHalfHorizontalRight rst__lineHalfVerticalBottom';
         } else if (i === scaffoldBlockCount - 1) {
           // Last scaffold block in the row, right before the row content
           // +--+--+
@@ -53,7 +49,7 @@ class TreeNode extends Component {
           // |  +--+
           // |  |  |
           // +--+--+
-          lineClass = `${styles.lineHalfHorizontalRight} ${styles.lineFullVertical}`;
+          lineClass = 'rst__lineHalfHorizontalRight rst__lineFullVertical';
         } else {
           // Simply connecting the line extending down to the next sibling on this level
           // +--+--+
@@ -61,7 +57,7 @@ class TreeNode extends Component {
           // |  |  |
           // |  |  |
           // +--+--+
-          lineClass = styles.lineFullVertical;
+          lineClass = 'rst__lineFullVertical';
         }
       } else if (listIndex === 0) {
         // Top-left corner of the tree, but has no siblings
@@ -70,7 +66,7 @@ class TreeNode extends Component {
         // |  +--+
         // |     |
         // +-----+
-        lineClass = styles.lineHalfHorizontalRight;
+        lineClass = 'rst__lineHalfHorizontalRight';
       } else if (i === scaffoldBlockCount - 1) {
         // The last or only node in this level of the tree
         // +--+--+
@@ -78,14 +74,14 @@ class TreeNode extends Component {
         // |  +--+
         // |     |
         // +-----+
-        lineClass = `${styles.lineHalfVerticalTop} ${styles.lineHalfHorizontalRight}`;
+        lineClass = 'rst__lineHalfVerticalTop rst__lineHalfHorizontalRight';
       }
 
       scaffold.push(
         <div
           key={`pre_${1 + i}`}
           style={{ width: scaffoldBlockPxWidth }}
-          className={`${styles.lineBlock} ${lineClass}`}
+          className={`${'rst__lineBlock'} ${lineClass}`}
         />
       );
 
@@ -97,35 +93,35 @@ class TreeNode extends Component {
         if (listIndex === swapFrom + swapLength - 1) {
           // This block is on the bottom (target) line
           // This block points at the target block (where the row will go when released)
-          highlightLineClass = styles.highlightBottomLeftCorner;
+          highlightLineClass = 'rst__highlightBottomLeftCorner';
         } else if (treeIndex === swapFrom) {
           // This block is on the top (source) line
-          highlightLineClass = styles.highlightTopLeftCorner;
+          highlightLineClass = 'rst__highlightTopLeftCorner';
         } else {
           // This block is between the bottom and top
-          highlightLineClass = styles.highlightLineVertical;
+          highlightLineClass = 'rst__highlightLineVertical';
         }
 
         scaffold.push(
           <div
-            // simple trick for passing react/no-array-index-key eslint rule
-            key={`highlight_${1 + i}`}
+            // eslint-disable-next-line react/no-array-index-key
+            key={i}
             style={{
               width: scaffoldBlockPxWidth,
               left: scaffoldBlockPxWidth * i,
             }}
-            className={`${styles.absoluteLineBlock} ${highlightLineClass}`}
+            className={classnames('rst__absoluteLineBlock', highlightLineClass)}
           />
         );
       }
     });
 
     return connectDropTarget(
-      <div {...otherProps} className={styles.node}>
+      <div {...otherProps} className="rst__node">
         {scaffold}
 
         <div
-          className={styles.nodeContent}
+          className="rst__nodeContent"
           style={{ left: scaffoldBlockPxWidth * scaffoldBlockCount }}
         >
           {Children.map(children, child =>
@@ -147,17 +143,11 @@ TreeNode.defaultProps = {
   swapLength: null,
   canDrop: false,
   draggedNode: null,
-  customCanDrop: null,
-  maxDepth: null,
-  treeData: null,
 };
 
 TreeNode.propTypes = {
   treeIndex: PropTypes.number.isRequired,
-  node: PropTypes.shape({}).isRequired,
-  path: PropTypes.arrayOf(
-    PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-  ).isRequired,
+  treeId: PropTypes.string.isRequired,
   swapFrom: PropTypes.number,
   swapDepth: PropTypes.number,
   swapLength: PropTypes.number,
@@ -173,12 +163,12 @@ TreeNode.propTypes = {
   canDrop: PropTypes.bool,
   draggedNode: PropTypes.shape({}),
 
-  customCanDrop: PropTypes.func, // used in drag-and-drop-utils
-  dragHover: PropTypes.func.isRequired, // used in drag-and-drop-utils
-  getNodeKey: PropTypes.func.isRequired, // used in drag-and-drop-utils
-  getPrevRow: PropTypes.func.isRequired, // used in drag-and-drop-utils
-  maxDepth: PropTypes.number, // used in drag-and-drop-utils
-  treeData: PropTypes.arrayOf(PropTypes.object), // used in drag-and-drop-utils
+  // used in dndManager
+  getPrevRow: PropTypes.func.isRequired,
+  node: PropTypes.shape({}).isRequired,
+  path: PropTypes.arrayOf(
+    PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  ).isRequired,
 };
 
 export default TreeNode;

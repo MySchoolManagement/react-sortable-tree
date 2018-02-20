@@ -1,6 +1,7 @@
 node_modules
 npm-debug.log
 yarn.lock
+coverage
 
 # Editor and other tmp files
 *.swp
@@ -14,3 +15,5 @@ yarn.lock
 
 # Build directories (Will be preserved by npm)
 build
+style.css
+style.css.map
