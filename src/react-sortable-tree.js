@@ -146,12 +146,34 @@ class ReactSortableTree extends Component {
       }
 
       // Reset the drag state
-      this.setState({
-        draggingTreeData: null,
-        draggedNode: null,
-        draggedMinimumTreeIndex: null,
-        draggedDepth: null,
-        dragging: false,
+      this.setState(state => {
+        if (!state.dragging) {
+          return;
+        }
+
+        const draggedNodeMatches = find({
+          treeData: nextProps.treeData,
+          getNodeKey: this.props.getNodeKey,
+          searchMethod: ({ node }) => node.id === this.state.draggedNode.id
+        }).matches;
+
+        if (draggedNodeMatches.length === 0) {
+          return {
+            draggingTreeData: null,
+            draggedNode: null,
+            draggedMinimumTreeIndex: null,
+            draggedDepth: null,
+            dragging: false,
+          };
+        }
+
+        return {
+          draggingTreeData: removeNode({
+            treeData: nextProps.treeData,
+            path: draggedNodeMatches[0].path,
+            getNodeKey: this.props.getNodeKey,
+          }).treeData
+        };
       });
     } else if (!isEqual(this.props.searchQuery, nextProps.searchQuery)) {
       this.search(nextProps);
@@ -346,8 +368,11 @@ class ReactSortableTree extends Component {
   }) {
     // Ignore this hover if it is at the same position as the last hover
     if (
-      this.state.draggedDepth === draggedDepth &&
-      this.state.draggedMinimumTreeIndex === draggedMinimumTreeIndex
+      (
+        this.state.draggedDepth === draggedDepth &&
+        this.state.draggedMinimumTreeIndex === draggedMinimumTreeIndex
+      ) ||
+      !this.state.dragging
     ) {
       return;
     }
@@ -361,23 +386,25 @@ class ReactSortableTree extends Component {
       newNode: draggedNode,
       depth: draggedDepth,
       minimumTreeIndex: draggedMinimumTreeIndex,
-      expandParent: true,
+      expandParent: false,
       getNodeKey: this.props.getNodeKey,
     });
 
     const rows = this.getRows(addedResult.treeData);
     const expandedParentPath = rows[addedResult.treeIndex].path;
 
+    const newDraggingTreeData = changeNodeAtPath({
+      treeData: draggingTreeData,
+      path: expandedParentPath.slice(0, -1),
+      newNode: ({ node }) => ({ ...node, expanded: true }),
+      getNodeKey: this.props.getNodeKey,
+    });
+
     this.setState({
       draggedNode,
       draggedDepth,
       draggedMinimumTreeIndex,
-      draggingTreeData: changeNodeAtPath({
-        treeData: draggingTreeData,
-        path: expandedParentPath.slice(0, -1),
-        newNode: ({ node }) => ({ ...node, expanded: true }),
-        getNodeKey: this.props.getNodeKey,
-      }),
+      draggingTreeData: newDraggingTreeData,
       // reset the scroll focus so it doesn't jump back
       // to a search result while dragging
       searchFocusTreeIndex: null,
