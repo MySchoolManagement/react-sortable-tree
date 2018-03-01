@@ -1157,18 +1157,36 @@
             }, {
                 key: "componentWillReceiveProps",
                 value: function(nextProps) {
+                    var _this2 = this;
                     this.props.treeData !== nextProps.treeData ? (// Ignore updates caused by search, in order to avoid infinite looping
                     this.ignoreOneTreeUpdate ? this.ignoreOneTreeUpdate = !1 : (// Reset the focused index if the tree has changed
                     this.setState({
                         searchFocusTreeIndex: null
                     }), // Load any children defined by a function
                     this.loadLazyChildren(nextProps), this.search(nextProps, !1, !1)), // Reset the drag state
-                    this.setState({
-                        draggingTreeData: null,
-                        draggedNode: null,
-                        draggedMinimumTreeIndex: null,
-                        draggedDepth: null,
-                        dragging: !1
+                    this.setState(function(state) {
+                        if (state.dragging) {
+                            var draggedNodeMatches = (0, _treeDataUtils.find)({
+                                treeData: nextProps.treeData,
+                                getNodeKey: _this2.props.getNodeKey,
+                                searchMethod: function(_ref) {
+                                    return _ref.node.id === _this2.state.draggedNode.id;
+                                }
+                            }).matches;
+                            return 0 === draggedNodeMatches.length ? {
+                                draggingTreeData: null,
+                                draggedNode: null,
+                                draggedMinimumTreeIndex: null,
+                                draggedDepth: null,
+                                dragging: !1
+                            } : {
+                                draggingTreeData: (0, _treeDataUtils.removeNode)({
+                                    treeData: nextProps.treeData,
+                                    path: draggedNodeMatches[0].path,
+                                    getNodeKey: _this2.props.getNodeKey
+                                }).treeData
+                            };
+                        }
                     })) : (0, _lodash2.default)(this.props.searchQuery, nextProps.searchQuery) ? this.props.searchFocusOffset !== nextProps.searchFocusOffset && this.search(nextProps, !0, !0, !0) : this.search(nextProps);
                 }
             }, {
@@ -1204,12 +1222,12 @@
                 }
             }, {
                 key: "toggleChildrenVisibility",
-                value: function(_ref) {
-                    var targetNode = _ref.node, path = _ref.path, treeData = (0, _treeDataUtils.changeNodeAtPath)({
+                value: function(_ref2) {
+                    var targetNode = _ref2.node, path = _ref2.path, treeData = (0, _treeDataUtils.changeNodeAtPath)({
                         treeData: this.props.treeData,
                         path: path,
-                        newNode: function(_ref2) {
-                            var node = _ref2.node;
+                        newNode: function(_ref3) {
+                            var node = _ref3.node;
                             return _extends({}, node, {
                                 expanded: !node.expanded
                             });
@@ -1225,8 +1243,8 @@
                 }
             }, {
                 key: "moveNode",
-                value: function(_ref3) {
-                    var node = _ref3.node, prevPath = _ref3.path, prevTreeIndex = _ref3.treeIndex, depth = _ref3.depth, minimumTreeIndex = _ref3.minimumTreeIndex, _insertNode = (0, 
+                value: function(_ref4) {
+                    var node = _ref4.node, prevPath = _ref4.path, prevTreeIndex = _ref4.treeIndex, depth = _ref4.depth, minimumTreeIndex = _ref4.minimumTreeIndex, _insertNode = (0, 
                     _treeDataUtils.insertNode)({
                         treeData: this.state.draggingTreeData,
                         newNode: node,
@@ -1276,13 +1294,13 @@
                 }
             }, {
                 key: "startDrag",
-                value: function(_ref4) {
-                    var _this2 = this, path = _ref4.path;
+                value: function(_ref5) {
+                    var _this3 = this, path = _ref5.path;
                     this.setState(function() {
                         var _removeNode = (0, _treeDataUtils.removeNode)({
-                            treeData: _this2.props.treeData,
+                            treeData: _this3.props.treeData,
                             path: path,
-                            getNodeKey: _this2.props.getNodeKey
+                            getNodeKey: _this3.props.getNodeKey
                         }), draggingTreeData = _removeNode.treeData, draggedNode = _removeNode.node, draggedMinimumTreeIndex = _removeNode.treeIndex;
                         return {
                             draggingTreeData: draggingTreeData,
@@ -1295,10 +1313,10 @@
                 }
             }, {
                 key: "dragHover",
-                value: function(_ref5) {
-                    var draggedNode = _ref5.node, draggedDepth = _ref5.depth, draggedMinimumTreeIndex = _ref5.minimumTreeIndex;
+                value: function(_ref6) {
+                    var draggedNode = _ref6.node, draggedDepth = _ref6.depth, draggedMinimumTreeIndex = _ref6.minimumTreeIndex;
                     // Ignore this hover if it is at the same position as the last hover
-                    if (this.state.draggedDepth !== draggedDepth || this.state.draggedMinimumTreeIndex !== draggedMinimumTreeIndex) {
+                    if ((this.state.draggedDepth !== draggedDepth || this.state.draggedMinimumTreeIndex !== draggedMinimumTreeIndex) && this.state.dragging) {
                         // Fall back to the tree data if something is being dragged in from
                         //  an external element
                         var draggingTreeData = this.state.draggingTreeData || this.props.treeData, addedResult = (0, 
@@ -1307,24 +1325,25 @@
                             newNode: draggedNode,
                             depth: draggedDepth,
                             minimumTreeIndex: draggedMinimumTreeIndex,
-                            expandParent: !0,
+                            expandParent: !1,
                             getNodeKey: this.props.getNodeKey
-                        }), rows = this.getRows(addedResult.treeData), expandedParentPath = rows[addedResult.treeIndex].path;
+                        }), rows = this.getRows(addedResult.treeData), expandedParentPath = rows[addedResult.treeIndex].path, newDraggingTreeData = (0, 
+                        _treeDataUtils.changeNodeAtPath)({
+                            treeData: draggingTreeData,
+                            path: expandedParentPath.slice(0, -1),
+                            newNode: function(_ref7) {
+                                var node = _ref7.node;
+                                return _extends({}, node, {
+                                    expanded: !0
+                                });
+                            },
+                            getNodeKey: this.props.getNodeKey
+                        });
                         this.setState({
                             draggedNode: draggedNode,
                             draggedDepth: draggedDepth,
                             draggedMinimumTreeIndex: draggedMinimumTreeIndex,
-                            draggingTreeData: (0, _treeDataUtils.changeNodeAtPath)({
-                                treeData: draggingTreeData,
-                                path: expandedParentPath.slice(0, -1),
-                                newNode: function(_ref6) {
-                                    var node = _ref6.node;
-                                    return _extends({}, node, {
-                                        expanded: !0
-                                    });
-                                },
-                                getNodeKey: this.props.getNodeKey
-                            }),
+                            draggingTreeData: newDraggingTreeData,
                             // reset the scroll focus so it doesn't jump back
                             // to a search result while dragging
                             searchFocusTreeIndex: null,
@@ -1335,7 +1354,7 @@
             }, {
                 key: "endDrag",
                 value: function(dropResult) {
-                    var _this3 = this;
+                    var _this4 = this;
                     // Drop was cancelled
                     if (dropResult) {
                         if (dropResult.treeId !== this.treeId) {
@@ -1353,8 +1372,8 @@
                                 treeData: this.props.treeData,
                                 // use treeData unaltered by the drag operation
                                 path: path,
-                                newNode: function(_ref7) {
-                                    var copyNode = _ref7.node;
+                                newNode: function(_ref8) {
+                                    var copyNode = _ref8.node;
                                     return _extends({}, copyNode);
                                 },
                                 // create a shallow copy of the node
@@ -1371,7 +1390,7 @@
                             });
                         }
                     } else !function() {
-                        _this3.setState({
+                        _this4.setState({
                             draggingTreeData: null,
                             draggedNode: null,
                             draggedMinimumTreeIndex: null,
@@ -1388,12 +1407,12 @@
             }, {
                 key: "loadLazyChildren",
                 value: function() {
-                    var _this4 = this, props = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : this.props;
+                    var _this5 = this, props = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : this.props;
                     (0, _treeDataUtils.walk)({
                         treeData: props.treeData,
                         getNodeKey: this.props.getNodeKey,
-                        callback: function(_ref8) {
-                            var node = _ref8.node, path = _ref8.path, lowerSiblingCounts = _ref8.lowerSiblingCounts, treeIndex = _ref8.treeIndex;
+                        callback: function(_ref9) {
+                            var node = _ref9.node, path = _ref9.path, lowerSiblingCounts = _ref9.lowerSiblingCounts, treeIndex = _ref9.treeIndex;
                             // If the node has children defined by a function, and is either expanded
                             //  or set to load even before expansion, run the function.
                             node.children && "function" == typeof node.children && (node.expanded || props.loadCollapsedLazyChildren) && // Call the children fetching function
@@ -1404,18 +1423,18 @@
                                 treeIndex: treeIndex,
                                 // Provide a helper to append the new data when it is received
                                 done: function(childrenArray) {
-                                    return _this4.props.onChange((0, _treeDataUtils.changeNodeAtPath)({
-                                        treeData: _this4.props.treeData,
+                                    return _this5.props.onChange((0, _treeDataUtils.changeNodeAtPath)({
+                                        treeData: _this5.props.treeData,
                                         path: path,
-                                        newNode: function(_ref9) {
-                                            var oldNode = _ref9.node;
+                                        newNode: function(_ref10) {
+                                            var oldNode = _ref10.node;
                                             // Only replace the old node if it's the one we set off to find children
                                             //  for in the first place
                                             return oldNode === node ? _extends({}, oldNode, {
                                                 children: childrenArray
                                             }) : oldNode;
                                         },
-                                        getNodeKey: _this4.props.getNodeKey
+                                        getNodeKey: _this5.props.getNodeKey
                                     }));
                                 }
                             });
@@ -1424,8 +1443,8 @@
                 }
             }, {
                 key: "renderRow",
-                value: function(_ref10, _ref11) {
-                    var node = _ref10.node, parentNode = _ref10.parentNode, path = _ref10.path, lowerSiblingCounts = _ref10.lowerSiblingCounts, treeIndex = _ref10.treeIndex, listIndex = _ref11.listIndex, style = _ref11.style, getPrevRow = _ref11.getPrevRow, matchKeys = _ref11.matchKeys, swapFrom = _ref11.swapFrom, swapDepth = _ref11.swapDepth, swapLength = _ref11.swapLength, _mergeTheme2 = mergeTheme(this.props), canDrag = _mergeTheme2.canDrag, generateNodeProps = _mergeTheme2.generateNodeProps, scaffoldBlockPxWidth = _mergeTheme2.scaffoldBlockPxWidth, searchFocusOffset = _mergeTheme2.searchFocusOffset, TreeNodeRenderer = this.treeNodeRenderer, NodeContentRenderer = this.nodeContentRenderer, nodeKey = path[path.length - 1], isSearchMatch = nodeKey in matchKeys, isSearchFocus = isSearchMatch && matchKeys[nodeKey] === searchFocusOffset, callbackParams = {
+                value: function(_ref11, _ref12) {
+                    var node = _ref11.node, parentNode = _ref11.parentNode, path = _ref11.path, lowerSiblingCounts = _ref11.lowerSiblingCounts, treeIndex = _ref11.treeIndex, listIndex = _ref12.listIndex, style = _ref12.style, getPrevRow = _ref12.getPrevRow, matchKeys = _ref12.matchKeys, swapFrom = _ref12.swapFrom, swapDepth = _ref12.swapDepth, swapLength = _ref12.swapLength, _mergeTheme2 = mergeTheme(this.props), canDrag = _mergeTheme2.canDrag, generateNodeProps = _mergeTheme2.generateNodeProps, scaffoldBlockPxWidth = _mergeTheme2.scaffoldBlockPxWidth, searchFocusOffset = _mergeTheme2.searchFocusOffset, TreeNodeRenderer = this.treeNodeRenderer, NodeContentRenderer = this.nodeContentRenderer, nodeKey = path[path.length - 1], isSearchMatch = nodeKey in matchKeys, isSearchFocus = isSearchMatch && matchKeys[nodeKey] === searchFocusOffset, callbackParams = {
                         node: node,
                         parentNode: parentNode,
                         path: path,
@@ -1460,7 +1479,7 @@
             }, {
                 key: "render",
                 value: function() {
-                    var _this5 = this, _mergeTheme3 = mergeTheme(this.props), style = _mergeTheme3.style, className = _mergeTheme3.className, innerStyle = _mergeTheme3.innerStyle, rowHeight = _mergeTheme3.rowHeight, isVirtualized = _mergeTheme3.isVirtualized, placeholderRenderer = _mergeTheme3.placeholderRenderer, reactVirtualizedListProps = _mergeTheme3.reactVirtualizedListProps, getNodeKey = _mergeTheme3.getNodeKey, _state = this.state, searchMatches = _state.searchMatches, searchFocusTreeIndex = _state.searchFocusTreeIndex, draggedNode = _state.draggedNode, draggedDepth = _state.draggedDepth, draggedMinimumTreeIndex = _state.draggedMinimumTreeIndex, treeData = this.state.draggingTreeData || this.props.treeData, rows = void 0, swapFrom = null, swapLength = null;
+                    var _this6 = this, _mergeTheme3 = mergeTheme(this.props), style = _mergeTheme3.style, className = _mergeTheme3.className, innerStyle = _mergeTheme3.innerStyle, rowHeight = _mergeTheme3.rowHeight, isVirtualized = _mergeTheme3.isVirtualized, placeholderRenderer = _mergeTheme3.placeholderRenderer, reactVirtualizedListProps = _mergeTheme3.reactVirtualizedListProps, getNodeKey = _mergeTheme3.getNodeKey, _state = this.state, searchMatches = _state.searchMatches, searchFocusTreeIndex = _state.searchFocusTreeIndex, draggedNode = _state.draggedNode, draggedDepth = _state.draggedDepth, draggedMinimumTreeIndex = _state.draggedMinimumTreeIndex, treeData = this.state.draggingTreeData || this.props.treeData, rows = void 0, swapFrom = null, swapLength = null;
                     if (draggedNode && null !== draggedMinimumTreeIndex) {
                         var addedResult = (0, _memoizedTreeDataUtils.memoizedInsertNode)({
                             treeData: treeData,
@@ -1476,8 +1495,8 @@
                     } else rows = this.getRows(treeData);
                     // Get indices for rows that match the search conditions
                     var matchKeys = {};
-                    searchMatches.forEach(function(_ref12, i) {
-                        var path = _ref12.path;
+                    searchMatches.forEach(function(_ref13, i) {
+                        var path = _ref13.path;
                         matchKeys[path[path.length - 1]] = i;
                     });
                     // Seek to the focused search result if there is one specified
@@ -1496,25 +1515,25 @@
                         }, containerStyle);
                         var ScrollZoneVirtualList = this.scrollZoneVirtualList;
                         // Render list with react-virtualized
-                        list = _react2.default.createElement(_reactVirtualized.AutoSizer, null, function(_ref13) {
-                            var height = _ref13.height, width = _ref13.width;
+                        list = _react2.default.createElement(_reactVirtualized.AutoSizer, null, function(_ref14) {
+                            var height = _ref14.height, width = _ref14.width;
                             return _react2.default.createElement(ScrollZoneVirtualList, _extends({}, scrollToInfo, {
-                                verticalStrength: _this5.vStrength,
-                                horizontalStrength: _this5.hStrength,
+                                verticalStrength: _this6.vStrength,
+                                horizontalStrength: _this6.hStrength,
                                 speed: 30,
                                 scrollToAlignment: "start",
                                 className: "rst__virtualScrollOverride",
                                 width: width,
-                                onScroll: function(_ref14) {
-                                    var scrollTop = _ref14.scrollTop;
-                                    _this5.scrollTop = scrollTop;
+                                onScroll: function(_ref15) {
+                                    var scrollTop = _ref15.scrollTop;
+                                    _this6.scrollTop = scrollTop;
                                 },
                                 height: height,
                                 style: innerStyle,
                                 rowCount: rows.length,
                                 estimatedRowSize: "function" != typeof rowHeight ? rowHeight : void 0,
-                                rowHeight: "function" != typeof rowHeight ? rowHeight : function(_ref15) {
-                                    var index = _ref15.index;
+                                rowHeight: "function" != typeof rowHeight ? rowHeight : function(_ref16) {
+                                    var index = _ref16.index;
                                     return rowHeight({
                                         index: index,
                                         treeIndex: index,
@@ -1522,9 +1541,9 @@
                                         path: rows[index].path
                                     });
                                 },
-                                rowRenderer: function(_ref16) {
-                                    var index = _ref16.index, rowStyle = _ref16.style;
-                                    return _this5.renderRow(rows[index], {
+                                rowRenderer: function(_ref17) {
+                                    var index = _ref17.index, rowStyle = _ref17.style;
+                                    return _this6.renderRow(rows[index], {
                                         listIndex: index,
                                         style: rowStyle,
                                         getPrevRow: function() {
@@ -1540,7 +1559,7 @@
                         });
                     } else // Render list without react-virtualized
                     list = rows.map(function(row, index) {
-                        return _this5.renderRow(row, {
+                        return _this6.renderRow(row, {
                             listIndex: index,
                             style: {
                                 height: "function" != typeof rowHeight ? rowHeight : rowHeight({
